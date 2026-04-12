@@ -51,9 +51,9 @@ public class OrderFormPage {
     @FindBy(xpath = "//div[contains(@class, 'Order_Content')]//button[text()='Заказать']")
     private WebElement orderButton;
 
-    // Кнопка подтверждения в модальном окне "Хотите оформить заказ?"
-    @FindBy(xpath = "//button[text()='Да']")
-    private WebElement confirmOrderButton;
+    // Локаторы для финальных шагов
+    private final By orderSuccessHeader = By.xpath(".//div[contains(@class, 'Order_ModalHeader') and contains(text(), 'Заказ оформлен')]");
+    private final By confirmButton = By.xpath("//div[contains(@class, 'Order_Modal')]//button[text()='Да']");
 
     public OrderFormPage(WebDriver driver) {
         this.driver = driver;
@@ -61,67 +61,51 @@ public class OrderFormPage {
         PageFactory.initElements(driver, this);
     }
 
-    public boolean isOrderFormVisible() {
-        return wait.until(ExpectedConditions.visibilityOf(nameField)).isDisplayed();
-    }
-
-    // Заполнение первой страницы
+    // Заполнение первой страницы формы
     public void fillFirstStep(String name, String surname, String address, String metro, String phone) {
+        wait.until(ExpectedConditions.visibilityOf(nameField));
         nameField.sendKeys(name);
         surnameField.sendKeys(surname);
         addressField.sendKeys(address);
-
-        // Выбор метро
-        metroField.click();
-        String metroOptionXpath = ".//div[text()='" + metro + "']";
-        WebElement metroOption = wait.until(ExpectedConditions.elementToBeClickable(By.xpath(metroOptionXpath)));
-        metroOption.click();
-
+        selectMetro(metro);
         phoneField.sendKeys(phone);
         nextButton.click();
     }
 
-    // Заполнение второй страницы
+    // Метод для выбора станции метро из выпадающего списка
+    private void selectMetro(String metro) {
+        metroField.click();
+        By metroOption = By.xpath(".//div[text()='" + metro + "']");
+        wait.until(ExpectedConditions.elementToBeClickable(metroOption)).click();
+    }
+
+    // Заполнение второй страницы формы
     public void fillSecondStep(String date, String period, String color, String comment) {
         wait.until(ExpectedConditions.visibilityOf(dateField));
+        dateField.sendKeys(date, Keys.ENTER);
 
-        // Дата (ввод и закрытие календаря через Enter)
-        dateField.sendKeys(date);
-        dateField.sendKeys(Keys.ENTER);
-
-        // Срок аренды (не Select!)
         rentalPeriodDropdown.click();
-        String periodXpath = ".//div[@class='Dropdown-menu']/div[text()='" + period + "']";
-        driver.findElement(By.xpath(periodXpath)).click();
+        By periodOption = By.xpath(".//div[@class='Dropdown-menu']/div[text()='" + period + "']");
+        wait.until(ExpectedConditions.elementToBeClickable(periodOption)).click();
 
-        // Цвет
-        if ("black".equalsIgnoreCase(color)) blackColor.click();
-        if ("grey".equalsIgnoreCase(color)) greyColor.click();
+        if ("black".equalsIgnoreCase(color)) {
+            wait.until(ExpectedConditions.elementToBeClickable(blackColor)).click();
+        } else if ("grey".equalsIgnoreCase(color)) {
+            wait.until(ExpectedConditions.elementToBeClickable(greyColor)).click();
+        }
 
         commentField.sendKeys(comment);
     }
 
+    // Завершение оформления заказа
     public void submitOrder() {
-        // 1. Ждем и кликаем на основную кнопку "Заказать" в форме
-        wait.until(ExpectedConditions.elementToBeClickable(orderButton));
-        orderButton.click();
-
-        // 2. Находим кнопку "Да" во всплывающем окне и кликаем
-                WebElement confirmBtn = wait.until(ExpectedConditions.elementToBeClickable(
-                By.xpath("//div[contains(@class, 'Order_Modal')]//button[text()='Да']")
-        ));
-
+        wait.until(ExpectedConditions.elementToBeClickable(orderButton)).click();
+        wait.until(ExpectedConditions.elementToBeClickable(confirmButton)).click();
     }
 
-
+    // Проверка отображения подтверждения заказа
     public boolean isOrderSuccessVisible() {
-        try {
-            WebElement statusHeader = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.xpath(".//div[contains(@class, 'Order_ModalHeader') and text()='Заказ оформлен']")));
-            return statusHeader.isDisplayed();
-        } catch (Exception e) {
-            return false;
-        }
+        return wait.until(ExpectedConditions.visibilityOfElementLocated(orderSuccessHeader)).isDisplayed();
     }
 }
 

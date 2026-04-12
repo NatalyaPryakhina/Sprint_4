@@ -1,32 +1,20 @@
 package tests;
 
-import org.junit.runner.RunWith;
-import org.openqa.selenium.By;
-import pages.MainPage;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import pages.OrderFormPage;
-
+import pages.MainPage;
 import java.util.Arrays;
 import java.util.Collection;
-
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class DropdownTests {
-    private WebDriver driver;
+public class DropdownTests extends BaseTest {
     private MainPage mainPage;
-
     private final int index;
     private final String expectedQuestion;
     private final String expectedAnswer;
-    private OrderFormPage orderFormPage;
 
     public DropdownTests(int index, String expectedQuestion, String expectedAnswer) {
         this.index = index;
@@ -34,7 +22,7 @@ public class DropdownTests {
         this.expectedAnswer = expectedAnswer;
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "Тест вопроса №{0}: {1}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 {0, "Сколько это стоит? И как оплатить?", "Сутки — 400 рублей. Оплата курьеру — наличными или картой."},
@@ -49,58 +37,21 @@ public class DropdownTests {
     }
 
     @Before
+    @Override
     public void setUp() {
-
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        driver.manage().window().maximize();
-        driver.manage().timeouts().implicitlyWait(10, java.util.concurrent.TimeUnit.SECONDS);
-        driver.get("https://qa-scooter.praktikum-services.ru/");
-        driver.findElement(By.id("rcc-confirm-button")).click();
-
-        WebDriverWait wait = null;
-
+        super.setUp();
         mainPage = new MainPage(driver);
-
-
-        // Скроллим до раздела «Вопросы о важном»
-        boolean scrolled = mainPage.scrollToQuestionsSectionWithRetry(3);
-        if (!scrolled) {
-            throw new RuntimeException("Не удалось проскроллить до раздела вопросов после 3 попыток");
-        }
-
-        // Ждём загрузки аккордеона перед тестами
-        wait = new WebDriverWait(driver, 10);
-        wait.until(driver -> {
-            try {
-                return !mainPage.getQuestionText(0).isEmpty();
-            } catch (Exception e) {
-                return false;
-            }
-        });
+        mainPage.open();
+        mainPage.acceptCookies();
+        mainPage.scrollToQuestions();
     }
 
     @Test
     public void checkAccordionQuestionAndAnswer() {
-        // 1. Проверяем текст вопроса перед кликом
-        String actualQuestion = mainPage.getQuestionText(index);
-        assertEquals("Текст вопроса не совпадает для индекса " + index, expectedQuestion, actualQuestion);
-
-        // 2. Кликаем и проверяем текст ответа
         mainPage.clickQuestion(index);
-        // Даём время для анимации раскрытия аккордеона
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         String actualAnswer = mainPage.getAnswerText(index);
-        assertEquals("Текст ответа не совпадает для индекса " + index, expectedAnswer, actualAnswer);
-    }
-
-    @After
-    public void tearDown() {
-        driver.quit();
+        assertEquals("Текст ответа не совпадает", expectedAnswer, actualAnswer);
     }
 }
+
 

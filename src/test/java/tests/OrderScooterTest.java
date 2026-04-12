@@ -1,32 +1,22 @@
 package tests;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import pages.MainPage;
 import pages.OrderFormPage;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
-
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-public class OrderScooterTest {
-    private WebDriver driver;
+public class OrderScooterTest extends BaseTest {
     private MainPage mainPage;
     private OrderFormPage orderFormPage;
 
-    // Параметры для тестов
     private final String name;
     private final String surname;
     private final String address;
@@ -37,10 +27,9 @@ public class OrderScooterTest {
     private final String scooterColor;
     private final String comment;
 
-    // Конструктор: убрал LocalDate (заменил на String) и лишние запятые
-    public OrderScooterTest(String name, String surname, String address,
-                            String metro, String phone, String deliveryDate,
-                            String rentalPeriod, String scooterColor, String comment) {
+    public OrderScooterTest(String name, String surname, String address, String metro,
+                            String phone, String deliveryDate, String rentalPeriod,
+                            String scooterColor, String comment) {
         this.name = name;
         this.surname = surname;
         this.address = address;
@@ -52,7 +41,7 @@ public class OrderScooterTest {
         this.comment = comment;
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "Заказ: {0} {1}, метро: {3}")
     public static Collection<Object[]> data() {
         String date = LocalDate.now().plusDays(1).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
         return Arrays.asList(new Object[][] {
@@ -62,19 +51,13 @@ public class OrderScooterTest {
     }
 
     @Before
+    @Override
     public void setUp() {
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        driver.manage().window().maximize();
-        driver.get("https://qa-scooter.praktikum-services.ru/");
-
-        // Принимаем куки, чтобы не мешали
-        try {
-            driver.findElement(By.id("rcc-confirm-button")).click();
-        } catch (Exception ignored) {}
-
+        super.setUp();
         mainPage = new MainPage(driver);
         orderFormPage = new OrderFormPage(driver);
+        mainPage.open();
+        mainPage.acceptCookies();
     }
 
     @Test
@@ -83,7 +66,7 @@ public class OrderScooterTest {
         orderFormPage.fillFirstStep(name, surname, address, metro, phone);
         orderFormPage.fillSecondStep(deliveryDate, rentalPeriod, scooterColor, comment);
         orderFormPage.submitOrder();
-        assertTrue("Заказ не оформился через верхнюю кнопку", orderFormPage.isOrderSuccessVisible());
+        assertTrue("Окно 'Заказ оформлен' не появилось", orderFormPage.isOrderSuccessVisible());
     }
 
     @Test
@@ -93,11 +76,8 @@ public class OrderScooterTest {
         orderFormPage.fillFirstStep(name, surname, address, metro, phone);
         orderFormPage.fillSecondStep(deliveryDate, rentalPeriod, scooterColor, comment);
         orderFormPage.submitOrder();
-        assertTrue("Заказ не оформился через нижнюю кнопку", orderFormPage.isOrderSuccessVisible());
-    }
-
-    @After
-    public void tearDown() {
-        driver.quit();
+        assertTrue("Окно 'Заказ оформлен' не появилось", orderFormPage.isOrderSuccessVisible());
     }
 }
+
+
